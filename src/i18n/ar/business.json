@@ -1,0 +1,25 @@
+{
+  "welcome": {
+    "title": "مرحباً بك في محاسبة الأعمال",
+    "subtitle": "مصمم لأصحاب الأعمال، وليس فقط للمحاسبين",
+    "description": "أدر أموال عملك بسهولة - لا تحتاج خلفية محاسبية"
+  },
+  "features": {
+    "businessOwnerFriendly": "مناسب لأصحاب الأعمال",
+    "simpleInvoicing": "فوترة بسيطة",
+    "vatCompliance": "امتثال ضريبة القيمة المضافة",
+    "multiLanguage": "دعم العربية والإنجليزية"
+  },
+  "trial": {
+    "title": "تجربة مجانية 30 يوم",
+    "description": "اختبر جميع الميزات قبل الشراء",
+    "daysRemaining": "{{days}} يوم متبقي",
+    "upgrade": "ترقية للمتابعة"
+  },
+  "integrations": {
+    "coming": "قادم في المرحلة الثانية",
+    "whatsapp": "فوترة واتساب",
+    "payroll": "إدارة الرواتب",
+    "corporateTax": "وحدة ضريبة الشركات"
+  }
+}

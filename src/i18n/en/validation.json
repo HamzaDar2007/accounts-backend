@@ -1,0 +1,13 @@
+{
+  "required": "This field is required",
+  "email": "Please enter a valid email address",
+  "minLength": "Minimum length should be {{min}} characters",
+  "maxLength": "Maximum length should be {{max}} characters",
+  "password": "Password must contain uppercase, lowercase, number or special character",
+  "trn": "Invalid TRN format for selected country",
+  "phone": "Invalid phone number format",
+  "invalidCredentials": "Invalid credentials",
+  "userExists": "User already exists",
+  "companyExists": "Company already exists",
+  "accessDenied": "Access denied"
+}

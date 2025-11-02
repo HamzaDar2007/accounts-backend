@@ -1,0 +1,39 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Accounting API - UAE Environment Setup'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: 'production'
+  DatabasePassword:
+    Type: String
+    NoEcho: true
+    MinLength: 8
+
+Resources:
+  AccountingDatabase:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceIdentifier: !Sub 'accounting-db-${Environment}'
+      DBInstanceClass: db.t3.micro
+      Engine: postgres
+      EngineVersion: '14.9'
+      MasterUsername: postgres
+      MasterUserPassword: !Ref DatabasePassword
+      AllocatedStorage: 20
+      BackupRetentionPeriod: 7
+      PreferredBackupWindow: '03:00-04:00'
+      PreferredMaintenanceWindow: 'sun:04:00-sun:05:00'
+
+  MediaBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'accounting-media-${Environment}'
+      VersioningConfiguration:
+        Status: Enabled
+
+Outputs:
+  DatabaseEndpoint:
+    Value: !GetAtt AccountingDatabase.Endpoint.Address
+  S3BucketName:
+    Value: !Ref MediaBucket

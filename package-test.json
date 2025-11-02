@@ -1,0 +1,19 @@
+{
+  "name": "accounting-api-tests",
+  "version": "1.0.0",
+  "description": "Test suite for accounting API",
+  "scripts": {
+    "test:routes": "node test-all-routes.js",
+    "test:unit": "jest test-unit.spec.js",
+    "test:all": "npm run test:routes && npm run test:unit"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "supertest": "^6.3.3",
+    "jest": "^29.7.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testTimeout": 30000
+  }
+}

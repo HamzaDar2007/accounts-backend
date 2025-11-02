@@ -1,0 +1,25 @@
+{
+  "welcome": {
+    "title": "Welcome to Business Accounting",
+    "subtitle": "Designed for business owners, not just accountants",
+    "description": "Manage your business finances with ease - no accounting background required"
+  },
+  "features": {
+    "businessOwnerFriendly": "Business Owner Friendly",
+    "simpleInvoicing": "Simple Invoicing",
+    "vatCompliance": "VAT Compliance",
+    "multiLanguage": "Arabic & English Support"
+  },
+  "trial": {
+    "title": "30-Day Free Trial",
+    "description": "Test all features before you buy",
+    "daysRemaining": "{{days}} days remaining",
+    "upgrade": "Upgrade to continue"
+  },
+  "integrations": {
+    "coming": "Coming in Phase 2",
+    "whatsapp": "WhatsApp Invoicing",
+    "payroll": "Payroll Management",
+    "corporateTax": "Corporate Tax Module"
+  }
+}
