@@ -61,8 +61,8 @@ export class AccountingService {
     return this.chartOfAccountsService.getAccountsByType(companyId, 'ASSET');
   }
 
-  createAccount(companyId: string, body: any) {
-    return { message: 'Account creation feature coming soon', companyId, body };
+  async createAccount(companyId: string, body: any) {
+    return this.chartOfAccountsService.createAccount(companyId, body);
   }
 
   getJournalEntries(companyId: string) {
@@ -72,10 +72,11 @@ export class AccountingService {
   createJournalEntry(companyId: string, body: any, userId: string) {
     return this.journalEntryService.createJournalEntry({
       companyId,
-      description: body.description,
+      description: body.descriptionEn || body.description,
       referenceType: body.referenceType || 'MANUAL',
       referenceId: body.referenceId || 'MANUAL',
-      lines: body.lines
+      lines: body.lines,
+      userId
     });
   }
 

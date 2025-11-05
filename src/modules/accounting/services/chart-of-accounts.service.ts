@@ -60,4 +60,17 @@ export class ChartOfAccountsService {
       order: { accountCode: 'ASC' }
     });
   }
+
+  async createAccount(companyId: string, accountData: any): Promise<Account> {
+    const account = this.accountRepository.create({
+      companyId,
+      accountCode: accountData.accountCode,
+      accountNameEn: accountData.accountNameEn,
+      accountNameAr: accountData.accountNameAr,
+      accountType: accountData.accountType,
+      accountSubtype: accountData.accountSubtype,
+      isActive: true,
+    });
+    return this.accountRepository.save(account);
+  }
 }

@@ -35,7 +35,7 @@ export class VatManagementService {
 
   async findAll(companyId: string) {
     return this.vatSettingRepository.find({
-      where: { companyId, isActive: true },
+      where: { companyId },
       order: { isDefault: 'DESC', country: 'ASC' },
     });
   }

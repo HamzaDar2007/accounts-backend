@@ -36,7 +36,7 @@ export class JournalEntry extends BaseEntity {
   sourceType: SourceType;
 
   @Column({ name: 'source_id', type: 'uuid', nullable: true })
-  sourceId: string;
+  sourceId: string | null;
 
   @Column({ name: 'description_en', type: 'text' })
   descriptionEn: string;

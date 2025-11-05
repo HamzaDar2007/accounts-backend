@@ -18,6 +18,7 @@ export interface CreateJournalEntryDto {
   referenceType: string;
   referenceId: string;
   lines: JournalEntryLineDto[];
+  userId?: string;
 }
 
 @Injectable()
@@ -45,13 +46,13 @@ export class JournalEntryService {
       companyId: dto.companyId,
       descriptionEn: dto.description,
       sourceType: dto.referenceType as any,
-      sourceId: dto.referenceId,
+      sourceId: dto.referenceType === 'MANUAL' ? null : dto.referenceId,
       entryType: 'system_generated' as any,
       entryDate: new Date(),
       totalDebit: totalDebits,
       totalCredit: totalCredits,
       entryNumber: `JE-${Date.now()}`,
-      createdBy: 'system',
+      createdBy: dto.userId || 'system',
     });
 
     const savedEntry = await this.journalEntryRepository.save(journalEntry);
@@ -59,8 +60,8 @@ export class JournalEntryService {
     // Create journal entry lines
     const lines = dto.lines.map(line => 
       this.journalEntryLineRepository.create({
-        journalEntry: savedEntry,
-        account: { id: line.accountId } as any,
+        journalEntryId: savedEntry.id,
+        accountId: line.accountId,
         debitAmount: line.debitAmount || 0,
         creditAmount: line.creditAmount || 0,
         descriptionEn: line.description || dto.description,
@@ -82,14 +83,14 @@ export class JournalEntryService {
       .innerJoin('jel.account', 'acc')
       .select([
         'acc.id as accountId',
-        'acc.name as accountName',
-        'acc.type as accountType',
-        'SUM(jel.debitAmount) as totalDebits',
-        'SUM(jel.creditAmount) as totalCredits',
-        '(SUM(jel.debitAmount) - SUM(jel.creditAmount)) as balance'
+        'acc.account_name_en as accountName',
+        'acc.account_type as accountType',
+        'SUM(jel.debit_amount) as totalDebits',
+        'SUM(jel.credit_amount) as totalCredits',
+        '(SUM(jel.debit_amount) - SUM(jel.credit_amount)) as balance'
       ])
-      .where('je.companyId = :companyId', { companyId })
-      .groupBy('acc.id, acc.name, acc.type')
+      .where('je.company_id = :companyId', { companyId })
+      .groupBy('acc.id, acc.account_name_en, acc.account_type')
       .getRawMany();
 
     return result;

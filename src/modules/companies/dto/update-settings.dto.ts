@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsNumber, Min } from 'class-validator';
+import { IsString, IsOptional, IsNumber, Min, IsBoolean } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class UpdateSettingsDto {
@@ -38,4 +38,25 @@ export class UpdateSettingsDto {
   @IsOptional()
   @IsString()
   emailSignatureAr?: string;
+
+  @ApiProperty({ description: 'Default payment terms in days', example: 30, required: false })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  defaultPaymentTerms?: number;
+
+  @ApiProperty({ description: 'Enable WhatsApp invoicing feature', example: true, required: false })
+  @IsOptional()
+  @IsBoolean()
+  enableWhatsappInvoicing?: boolean;
+
+  @ApiProperty({ description: 'Enable payroll module', example: false, required: false })
+  @IsOptional()
+  @IsBoolean()
+  enablePayrollModule?: boolean;
+
+  @ApiProperty({ description: 'Enable corporate tax module', example: true, required: false })
+  @IsOptional()
+  @IsBoolean()
+  enableCorporateTax?: boolean;
 }

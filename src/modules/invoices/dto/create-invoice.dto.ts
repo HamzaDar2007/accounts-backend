@@ -9,9 +9,15 @@ export class CreateInvoiceLineDto {
   @IsUUID()
   itemId?: string;
 
-  @ApiProperty({ description: 'Item description in English', example: 'Professional consulting services' })
+  @ApiProperty({ description: 'Item description', example: 'Professional consulting services', required: false })
+  @IsOptional()
   @IsString()
-  descriptionEn: string;
+  description?: string;
+
+  @ApiProperty({ description: 'Item description in English', example: 'Professional consulting services', required: false })
+  @IsOptional()
+  @IsString()
+  descriptionEn?: string;
 
   @ApiProperty({ description: 'Item description in Arabic (optional)', example: 'خدمات استشارية مهنية', required: false })
   @IsOptional()
@@ -45,6 +51,11 @@ export class CreateInvoiceDto {
   @IsUUID()
   customerId: string;
 
+  @ApiProperty({ description: 'Invoice type', example: 'full', required: false })
+  @IsOptional()
+  @IsString()
+  invoiceType?: string;
+
   @ApiProperty({ description: 'Invoice issue date', example: '2024-01-15T00:00:00.000Z' })
   @IsDateString()
   issueDate: string;
@@ -53,15 +64,31 @@ export class CreateInvoiceDto {
   @IsDateString()
   dueDate: string;
 
+  @ApiProperty({ description: 'Supply date', example: '2024-01-15T00:00:00.000Z', required: false })
+  @IsOptional()
+  @IsDateString()
+  supplyDate?: string;
+
   @ApiProperty({ description: 'Invoice currency', enum: Currency, example: Currency.AED })
   @IsEnum(Currency)
   currency: Currency;
+
+  @ApiProperty({ description: 'Exchange rate', example: 1, minimum: 0, required: false })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  exchangeRate?: number;
 
   @ApiProperty({ description: 'Total discount amount (optional)', example: 50.00, minimum: 0, required: false })
   @IsOptional()
   @IsNumber()
   @Min(0)
   discountTotal?: number;
+
+  @ApiProperty({ description: 'Invoice notes', example: 'Payment due within 30 days', required: false })
+  @IsOptional()
+  @IsString()
+  notes?: string;
 
   @ApiProperty({ description: 'Invoice notes in English (optional)', example: 'Payment due within 30 days', required: false })
   @IsOptional()

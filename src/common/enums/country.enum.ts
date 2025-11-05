@@ -30,11 +30,11 @@ export enum IntegrationType {
 }
 
 export enum InvoiceStatus {
-  DRAFT = 'draft',
-  SENT = 'sent',
-  PAID = 'paid',
-  OVERDUE = 'overdue',
-  CANCELLED = 'cancelled'
+  DRAFT = 'Draft',
+  SENT = 'Sent',
+  PAID = 'Paid',
+  OVERDUE = 'Overdue',
+  CANCELLED = 'Cancelled'
 }
 
 export enum ProductType {

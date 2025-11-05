@@ -4,12 +4,13 @@ import { InvoicesService } from './invoices.service';
 import { InvoicesController } from './invoices.controller';
 import { Invoice } from './entities/invoice.entity';
 import { InvoiceItem } from './entities/invoice-item.entity';
+import { Customer } from '../customers/entities/customer.entity';
 import { CommonModule } from '../../common/common.module';
 import { AccountingModule } from '../accounting/accounting.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Invoice, InvoiceItem]), 
+    TypeOrmModule.forFeature([Invoice, InvoiceItem, Customer]), 
     CommonModule,
     AccountingModule,
   ],

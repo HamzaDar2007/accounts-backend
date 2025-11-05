@@ -95,6 +95,34 @@ export class InvoicesController {
     return this.invoicesService.findAll(companyId);
   }
 
+  @Get('next-number')
+  @ApiOperation({ summary: 'Get next invoice number' })
+  @ApiResponse({
+    status: 200,
+    description: 'Next invoice number returned',
+    example: { nextNumber: 'INV-0005' },
+  })
+  getNextNumber(@CurrentTenant() companyId: string) {
+    return this.invoicesService.getNextNumber(companyId);
+  }
+
+  @Get('stats')
+  @ApiOperation({ summary: 'Get invoice statistics' })
+  @ApiResponse({
+    status: 200,
+    description: 'Invoice stats returned',
+    example: {
+      draft: 5,
+      sent: 10,
+      paid: 25,
+      overdue: 3,
+      cancelled: 1,
+    },
+  })
+  getStats(@CurrentTenant() companyId: string) {
+    return this.invoicesService.getStats(companyId);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get invoice by ID' })
   @ApiParam({ name: 'id', description: 'Invoice ID' })
@@ -242,34 +270,6 @@ export class InvoicesController {
     @CurrentUser() user: JwtPayload,
   ) {
     return this.invoicesService.duplicate(id, companyId, user.sub);
-  }
-
-  @Get('next-number')
-  @ApiOperation({ summary: 'Get next invoice number' })
-  @ApiResponse({
-    status: 200,
-    description: 'Next invoice number returned',
-    example: { nextNumber: 'INV-0005' },
-  })
-  getNextNumber(@CurrentTenant() companyId: string) {
-    return this.invoicesService.getNextNumber(companyId);
-  }
-
-  @Get('stats')
-  @ApiOperation({ summary: 'Get invoice statistics' })
-  @ApiResponse({
-    status: 200,
-    description: 'Invoice stats returned',
-    example: {
-      draft: 5,
-      sent: 10,
-      paid: 25,
-      overdue: 3,
-      cancelled: 1,
-    },
-  })
-  getStats(@CurrentTenant() companyId: string) {
-    return this.invoicesService.getStats(companyId);
   }
 
   @Post(':id/validate-compliance')

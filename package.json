@@ -27,6 +27,7 @@
     "seed:run": "ts-node src/database/seeds/run-seeds.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.705.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.1",
@@ -37,7 +38,6 @@
     "@nestjs/typeorm": "^11.0.0",
     "@types/pdfkit": "^0.17.3",
     "@types/qrcode": "^1.5.6",
-    "aws-sdk": "^2.1692.0",
     "bcrypt": "^6.0.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
@@ -106,5 +106,11 @@
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
-  }
+  },
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "keywords": [],
+  "type": "commonjs"
 }

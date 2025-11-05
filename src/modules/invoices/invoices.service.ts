@@ -1,10 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Invoice } from './entities/invoice.entity';
 import { InvoiceItem } from './entities/invoice-item.entity';
+import { Customer } from '../customers/entities/customer.entity';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
+import { InvoiceStatus } from '../../common/enums/country.enum';
 import { AccountingService } from '../accounting/accounting.service';
 
 @Injectable()
@@ -14,35 +16,46 @@ export class InvoicesService {
     private invoiceRepository: Repository<Invoice>,
     @InjectRepository(InvoiceItem)
     private invoiceItemRepository: Repository<InvoiceItem>,
+    @InjectRepository(Customer)
+    private customerRepository: Repository<Customer>,
     private accountingService: AccountingService,
   ) {}
 
   async create(createInvoiceDto: CreateInvoiceDto, companyId: string, userId: string) {
-    // Generate invoice number
-    const invoiceNumber = await this.generateInvoiceNumber(companyId);
-    
-    // Calculate totals
-    const { subtotal, taxTotal, total } = this.calculateTotals(createInvoiceDto);
+    try {
+      // Validate customer exists
+      const customer = await this.customerRepository.findOne({
+        where: { id: createInvoiceDto.customerId, companyId }
+      });
+      if (!customer) {
+        throw new BadRequestException('Customer not found');
+      }
 
-    const invoice = this.invoiceRepository.create({
-      companyId,
-      invoiceNumber: invoiceNumber,
-      customerId: createInvoiceDto.customerId,
-      issueDate: new Date(createInvoiceDto.issueDate),
-      dueDate: new Date(createInvoiceDto.dueDate),
-      supplyDate: new Date(createInvoiceDto.issueDate),
-      currency: createInvoiceDto.currency,
-      subtotalAmount: subtotal,
-      taxAmount: taxTotal,
-      totalAmount: total,
-      totalAmountAed: total,
-      discountAmount: createInvoiceDto.discountTotal || 0,
-      notesEn: createInvoiceDto.notesEn,
-      notesAr: createInvoiceDto.notesAr,
-      createdBy: userId,
-    });
+      // Generate invoice number
+      const invoiceNumber = await this.generateInvoiceNumber(companyId);
+      
+      // Calculate totals
+      const { subtotal, taxTotal, total } = this.calculateTotals(createInvoiceDto);
 
-    const savedInvoice = await this.invoiceRepository.save(invoice);
+      const invoice = this.invoiceRepository.create({
+        companyId,
+        invoiceNumber: invoiceNumber,
+        customerId: createInvoiceDto.customerId,
+        issueDate: new Date(createInvoiceDto.issueDate),
+        dueDate: new Date(createInvoiceDto.dueDate),
+        supplyDate: createInvoiceDto.supplyDate ? new Date(createInvoiceDto.supplyDate) : new Date(createInvoiceDto.issueDate),
+        currency: createInvoiceDto.currency,
+        subtotalAmount: subtotal,
+        taxAmount: taxTotal,
+        totalAmount: total,
+        totalAmountAed: total * (createInvoiceDto.exchangeRate || 1),
+        discountAmount: createInvoiceDto.discountTotal || 0,
+        notesEn: createInvoiceDto.notesEn || createInvoiceDto.notes,
+        notesAr: createInvoiceDto.notesAr,
+        createdBy: userId,
+      });
+
+      const savedInvoice = await this.invoiceRepository.save(invoice);
 
     // Create invoice items
     const items = createInvoiceDto.lines.map(line => {
@@ -53,7 +66,7 @@ export class InvoicesService {
       return this.invoiceItemRepository.create({
         invoiceId: savedInvoice.id,
         itemId: line.itemId,
-        descriptionEn: line.descriptionEn,
+        descriptionEn: line.descriptionEn || line.description,
         descriptionAr: line.descriptionAr,
         quantity: line.quantity,
         unitPrice: line.unitPrice,
@@ -66,17 +79,28 @@ export class InvoicesService {
 
     await this.invoiceItemRepository.save(items);
 
-    // Create journal entry for invoice (if not draft)
-    if (savedInvoice.status !== 'draft') {
-      await this.accountingService.createInvoiceJournalEntry(
-        companyId,
-        savedInvoice.id,
-        subtotal,
-        taxTotal
-      );
+    // Create journal entry for invoice (if not draft and accounting service available)
+    if (savedInvoice.status !== InvoiceStatus.DRAFT) {
+      try {
+        await this.accountingService.createInvoiceJournalEntry(
+          companyId,
+          savedInvoice.id,
+          subtotal,
+          taxTotal
+        );
+      } catch (error) {
+        console.warn('Failed to create journal entry:', error.message);
+        // Continue without failing the invoice creation
+      }
     }
 
-    return this.findOne(savedInvoice.id, companyId);
+      return this.findOne(savedInvoice.id, companyId);
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new Error(`Failed to create invoice: ${error.message}`);
+    }
   }
 
   async findAll(companyId: string) {
@@ -117,7 +141,9 @@ export class InvoicesService {
       if (updateInvoiceDto.dueDate !== undefined) invoice.dueDate = new Date(updateInvoiceDto.dueDate);
       if (updateInvoiceDto.notesEn !== undefined) invoice.notesEn = updateInvoiceDto.notesEn;
       if (updateInvoiceDto.notesAr !== undefined) invoice.notesAr = updateInvoiceDto.notesAr;
+      if (updateInvoiceDto.notes !== undefined) invoice.notesEn = updateInvoiceDto.notes;
       if (updateInvoiceDto.discountAmount !== undefined) invoice.discountAmount = updateInvoiceDto.discountAmount;
+      if (updateInvoiceDto.discountTotal !== undefined) invoice.discountAmount = updateInvoiceDto.discountTotal;
       if (updateInvoiceDto.paymentMethod !== undefined) invoice.paymentMethod = updateInvoiceDto.paymentMethod;
       
       await this.invoiceRepository.save(invoice);
@@ -144,20 +170,25 @@ export class InvoicesService {
 
   async markAsSent(id: string, companyId: string) {
     const invoice = await this.findOne(id, companyId);
-    const wasDraft = invoice.status === 'draft';
+    const wasDraft = invoice.status === InvoiceStatus.DRAFT;
     
-    invoice.status = 'sent' as any;
+    invoice.status = InvoiceStatus.SENT;
     invoice.sentAt = new Date();
     await this.invoiceRepository.save(invoice);
     
     // Create journal entry if it was draft
     if (wasDraft) {
-      await this.accountingService.createInvoiceJournalEntry(
-        companyId,
-        invoice.id,
-        invoice.subtotalAmount,
-        invoice.taxAmount
-      );
+      try {
+        await this.accountingService.createInvoiceJournalEntry(
+          companyId,
+          invoice.id,
+          invoice.subtotalAmount,
+          invoice.taxAmount
+        );
+      } catch (error) {
+        console.warn('Failed to create journal entry:', error.message);
+        // Continue without failing the status update
+      }
     }
     
     return { message: 'Invoice marked as sent' };
@@ -165,7 +196,7 @@ export class InvoicesService {
 
   async markAsPaid(id: string, companyId: string) {
     const invoice = await this.findOne(id, companyId);
-    invoice.status = 'paid' as any;
+    invoice.status = InvoiceStatus.PAID;
     invoice.paidAt = new Date();
     await this.invoiceRepository.save(invoice);
     return { message: 'Invoice marked as paid' };
@@ -186,7 +217,7 @@ export class InvoicesService {
       customerId: original.customerId,
       invoiceNumber: newInvoiceNumber,
       invoiceType: original.invoiceType,
-      status: 'draft' as any,
+      status: InvoiceStatus.DRAFT,
       issueDate: new Date(),
       dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       supplyDate: new Date(),
