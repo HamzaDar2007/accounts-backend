@@ -301,63 +301,42 @@ export class SeedInitialData1703040000000 implements MigrationInterface {
     const companies = [
       {
         name: 'Al-Rashid Trading LLC',
-        name_en: 'Al-Rashid Trading LLC',
-        name_ar: 'شركة الراشد للتجارة ذ.م.م',
         country: 'UAE',
         currency: 'AED',
-        vat_rate: 5,
-        tax_registration_number: '100000000000003',
-        address_en: '123 Business Bay, Dubai, UAE',
-        address_ar: '123 خليج الأعمال، دبي، الإمارات',
-        phone: '+971501234567',
-        email: 'info@alrashid.ae',
+        trn: '100000000000003',
+        default_vat_rate: 5.0,
       },
       {
         name: 'Al-Saud Company Ltd',
-        name_en: 'Al-Saud Company Ltd',
-        name_ar: 'شركة آل سعود المحدودة',
         country: 'KSA',
         currency: 'SAR',
-        vat_rate: 15,
-        tax_registration_number: '300000000000003',
-        address_en: 'King Fahd Road, Riyadh, KSA',
-        address_ar: 'طريق الملك فهد، الرياض، السعودية',
-        phone: '+966501234567',
-        email: 'info@alsaud.sa',
+        trn: '300000000000003',
+        default_vat_rate: 15.0,
       },
     ];
 
     const companyIds: string[] = [];
     for (const company of companies) {
-      // Check if company already exists
       const existing = await queryRunner.query(
-        `
-        SELECT id FROM companies WHERE email = $1 LIMIT 1
-      `,
-        [company.email],
+        `SELECT id FROM companies WHERE trn = $1 LIMIT 1`,
+        [company.trn],
       );
-
+      
       if (existing.length > 0) {
         companyIds.push(existing[0].id);
       } else {
         const result = await queryRunner.query(
           `
-          INSERT INTO companies (name, name_en, name_ar, country, currency, vat_rate, tax_registration_number, address_en, address_ar, phone, email)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+          INSERT INTO companies (name, country, currency, trn, vat_enabled, default_vat_rate)
+          VALUES ($1, $2, $3, $4, true, $5)
           RETURNING id
         `,
           [
             company.name,
-            company.name_en,
-            company.name_ar,
             company.country,
             company.currency,
-            company.vat_rate,
-            company.tax_registration_number,
-            company.address_en,
-            company.address_ar,
-            company.phone,
-            company.email,
+            company.trn,
+            company.default_vat_rate,
           ],
         );
         companyIds.push(result[0].id);
@@ -368,8 +347,8 @@ export class SeedInitialData1703040000000 implements MigrationInterface {
     for (const companyId of companyIds) {
       await queryRunner.query(
         `
-        INSERT INTO company_settings (company_id, invoice_prefix, next_invoice_number, default_payment_terms)
-        VALUES ($1, 'INV', 1, 30)
+        INSERT INTO company_settings (company_id, invoice_prefix, next_invoice_number)
+        VALUES ($1, 'INV', 1)
         ON CONFLICT (company_id) DO NOTHING
       `,
         [companyId],
@@ -385,8 +364,7 @@ export class SeedInitialData1703040000000 implements MigrationInterface {
         first_name: 'Ahmed',
         last_name: 'Al-Rashid',
         role: 'Owner',
-        phone: '+971501234567',
-        preferred_language: 'en',
+        language: 'en',
       },
       {
         company_id: companyIds[0],
@@ -394,8 +372,7 @@ export class SeedInitialData1703040000000 implements MigrationInterface {
         first_name: 'Sara',
         last_name: 'Mohammed',
         role: 'Staff',
-        phone: '+971501234568',
-        preferred_language: 'ar',
+        language: 'ar',
       },
       {
         company_id: companyIds[1],
@@ -403,37 +380,24 @@ export class SeedInitialData1703040000000 implements MigrationInterface {
         first_name: 'Mohammed',
         last_name: 'Al-Saud',
         role: 'Owner',
-        phone: '+966501234567',
-        preferred_language: 'ar',
-      },
-      {
-        company_id: companyIds[1],
-        email: 'accountant@alsaud.sa',
-        first_name: 'Fatima',
-        last_name: 'Al-Zahra',
-        role: 'Accountant',
-        phone: '+966501234568',
-        preferred_language: 'ar',
+        language: 'ar',
       },
     ];
 
     const userIds: string[] = [];
     for (const user of users) {
-      // Check if user already exists
       const existing = await queryRunner.query(
-        `
-        SELECT id FROM users WHERE email = $1 LIMIT 1
-      `,
+        `SELECT id FROM users WHERE email = $1 LIMIT 1`,
         [user.email],
       );
-
+      
       if (existing.length > 0) {
         userIds.push(existing[0].id);
       } else {
         const result = await queryRunner.query(
           `
-          INSERT INTO users (company_id, email, password_hash, first_name, last_name, role, phone, preferred_language)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+          INSERT INTO users (company_id, email, password_hash, first_name, last_name, role, language)
+          VALUES ($1, $2, $3, $4, $5, $6, $7)
           RETURNING id
         `,
           [
@@ -443,8 +407,7 @@ export class SeedInitialData1703040000000 implements MigrationInterface {
             user.first_name,
             user.last_name,
             user.role,
-            user.phone,
-            user.preferred_language,
+            user.language,
           ],
         );
         userIds.push(result[0].id);
@@ -455,55 +418,59 @@ export class SeedInitialData1703040000000 implements MigrationInterface {
     const customers = [
       {
         company_id: companyIds[0],
-        name_en: 'Emirates Steel Industries',
-        name_ar: 'صناعات الإمارات للحديد والصلب',
-        customer_type: 'business',
+        name: 'Emirates Steel Industries',
         email: 'procurement@emiratessteel.ae',
         phone: '+971501111111',
-        tax_registration_number: '100000000000004',
-        address_en: 'Industrial Area, Abu Dhabi',
-        address_ar: 'المنطقة الصناعية، أبوظبي',
-        city: 'Abu Dhabi',
-        country: 'UAE',
+        trn: '100000000000004',
+        billing_address_json: JSON.stringify({
+          street: 'Industrial Area',
+          city: 'Abu Dhabi',
+          country: 'UAE'
+        }),
+        created_by: userIds[0],
+        updated_by: userIds[0],
       },
       {
         company_id: companyIds[0],
-        name_en: 'Dubai Mall Retail',
-        name_ar: 'دبي مول للتجزئة',
-        customer_type: 'business',
+        name: 'Dubai Mall Retail',
         email: 'orders@dubaimall.ae',
         phone: '+971502222222',
-        tax_registration_number: '100000000000005',
-        address_en: 'Downtown Dubai, Dubai',
-        address_ar: 'وسط مدينة دبي، دبي',
-        city: 'Dubai',
-        country: 'UAE',
+        trn: '100000000000005',
+        billing_address_json: JSON.stringify({
+          street: 'Downtown Dubai',
+          city: 'Dubai',
+          country: 'UAE'
+        }),
+        created_by: userIds[0],
+        updated_by: userIds[0],
       },
       {
         company_id: companyIds[1],
-        name_en: 'Saudi Aramco Services',
-        name_ar: 'خدمات أرامكو السعودية',
-        customer_type: 'business',
+        name: 'Saudi Aramco Services',
         email: 'procurement@aramco.sa',
         phone: '+966503333333',
-        tax_registration_number: '300000000000004',
-        address_en: 'Dhahran, Eastern Province',
-        address_ar: 'الظهران، المنطقة الشرقية',
-        city: 'Dhahran',
-        country: 'KSA',
+        trn: '300000000000004',
+        billing_address_json: JSON.stringify({
+          street: 'Dhahran',
+          city: 'Eastern Province',
+          country: 'KSA'
+        }),
+        created_by: userIds[2],
+        updated_by: userIds[2],
       },
       {
         company_id: companyIds[1],
-        name_en: 'Riyadh Construction Co.',
-        name_ar: 'شركة الرياض للإنشاءات',
-        customer_type: 'business',
+        name: 'Riyadh Construction Co.',
         email: 'projects@riyadhconstruction.sa',
         phone: '+966504444444',
-        tax_registration_number: '300000000000005',
-        address_en: 'King Abdulaziz Road, Riyadh',
-        address_ar: 'طريق الملك عبدالعزيز، الرياض',
-        city: 'Riyadh',
-        country: 'KSA',
+        trn: '300000000000005',
+        billing_address_json: JSON.stringify({
+          street: 'King Abdulaziz Road',
+          city: 'Riyadh',
+          country: 'KSA'
+        }),
+        created_by: userIds[2],
+        updated_by: userIds[2],
       },
     ];
 
@@ -511,22 +478,19 @@ export class SeedInitialData1703040000000 implements MigrationInterface {
     for (const customer of customers) {
       const result = await queryRunner.query(
         `
-        INSERT INTO customers (company_id, name_en, name_ar, customer_type, email, phone, tax_registration_number, address_en, address_ar, city, country)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        INSERT INTO customers (company_id, name, email, phone, trn, billing_address_json, created_by, updated_by)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         RETURNING id
       `,
         [
           customer.company_id,
-          customer.name_en,
-          customer.name_ar,
-          customer.customer_type,
+          customer.name,
           customer.email,
           customer.phone,
-          customer.tax_registration_number,
-          customer.address_en,
-          customer.address_ar,
-          customer.city,
-          customer.country,
+          customer.trn,
+          customer.billing_address_json,
+          customer.created_by,
+          customer.updated_by,
         ],
       );
       customerIds.push(result[0].id);
@@ -537,54 +501,26 @@ export class SeedInitialData1703040000000 implements MigrationInterface {
       {
         company_id: companyIds[0],
         sku: 'STEEL-001',
-        name_en: 'Steel Rebar 12mm',
+        name: 'Steel Rebar 12mm',
         name_ar: 'حديد التسليح 12 مم',
-        description_en: 'High quality steel rebar for construction',
+        description: 'High quality steel rebar for construction',
         description_ar: 'حديد تسليح عالي الجودة للبناء',
-        item_type: 'product',
         unit_price: 25.5,
-        cost_price: 20.0,
-        tax_rate: 5,
-        category: 'Construction Materials',
-      },
-      {
-        company_id: companyIds[0],
-        sku: 'CEMENT-001',
-        name_en: 'Portland Cement 50kg',
-        name_ar: 'أسمنت بورتلاند 50 كيلو',
-        description_en: 'Premium Portland cement for construction',
-        description_ar: 'أسمنت بورتلاند ممتاز للبناء',
-        item_type: 'product',
-        unit_price: 18.75,
-        cost_price: 15.0,
-        tax_rate: 5,
-        category: 'Construction Materials',
+        unit_cost: 20.0,
+        created_by: userIds[0],
+        updated_by: userIds[0],
       },
       {
         company_id: companyIds[1],
         sku: 'OIL-001',
-        name_en: 'Motor Oil 5W-30',
+        name: 'Motor Oil 5W-30',
         name_ar: 'زيت محرك 5W-30',
-        description_en: 'Synthetic motor oil for vehicles',
+        description: 'Synthetic motor oil for vehicles',
         description_ar: 'زيت محرك صناعي للمركبات',
-        item_type: 'product',
         unit_price: 45.0,
-        cost_price: 35.0,
-        tax_rate: 15,
-        category: 'Automotive',
-      },
-      {
-        company_id: companyIds[1],
-        sku: 'FILTER-001',
-        name_en: 'Air Filter Premium',
-        name_ar: 'فلتر هواء ممتاز',
-        description_en: 'High performance air filter',
-        description_ar: 'فلتر هواء عالي الأداء',
-        item_type: 'product',
-        unit_price: 28.5,
-        cost_price: 22.0,
-        tax_rate: 15,
-        category: 'Automotive',
+        unit_cost: 35.0,
+        created_by: userIds[2],
+        updated_by: userIds[2],
       },
     ];
 
@@ -592,22 +528,21 @@ export class SeedInitialData1703040000000 implements MigrationInterface {
     for (const item of items) {
       const result = await queryRunner.query(
         `
-        INSERT INTO items (company_id, sku, name_en, name_ar, description_en, description_ar, item_type, unit_price, cost_price, tax_rate, category)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        INSERT INTO items (company_id, sku, name, name_ar, description, description_ar, unit_price, unit_cost, created_by, updated_by)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         RETURNING id
       `,
         [
           item.company_id,
           item.sku,
-          item.name_en,
+          item.name,
           item.name_ar,
-          item.description_en,
+          item.description,
           item.description_ar,
-          item.item_type,
           item.unit_price,
-          item.cost_price,
-          item.tax_rate,
-          item.category,
+          item.unit_cost,
+          item.created_by,
+          item.updated_by,
         ],
       );
       itemIds.push(result[0].id);
@@ -617,185 +552,125 @@ export class SeedInitialData1703040000000 implements MigrationInterface {
     const invoices = [
       {
         company_id: companyIds[0],
-        customer_name: 'Emirates Steel Industries',
-        customer_email: 'procurement@emiratessteel.ae',
-        customer_phone: '+971501111111',
-        customer_address: 'Industrial Area, Abu Dhabi',
-        customer_trn: '100000000000004',
-        invoice_number: 'INV-001',
-        invoice_date: '2024-01-15',
+        customer_id: customerIds[0],
+        number: 'UAE-INV-001',
+        issue_date: '2024-01-15',
         due_date: '2024-02-14',
         status: 'Sent',
+        currency: 'AED',
         subtotal: 1000.0,
-        vat_amount: 50.0,
-        total_amount: 1050.0,
-        vat_rate: 5,
-        notes_en: 'Thank you for your business',
-        notes_ar: 'شكراً لتعاملكم معنا',
-      },
-      {
-        company_id: companyIds[0],
-        customer_name: 'Dubai Mall Retail',
-        customer_email: 'orders@dubaimall.ae',
-        customer_phone: '+971502222222',
-        customer_address: 'Downtown Dubai, Dubai',
-        customer_trn: '100000000000005',
-        invoice_number: 'INV-002',
-        invoice_date: '2024-01-16',
-        due_date: '2024-02-15',
-        status: 'Draft',
-        subtotal: 750.0,
-        vat_amount: 37.5,
-        total_amount: 787.5,
-        vat_rate: 5,
-        notes_en: 'Payment terms: 30 days',
-        notes_ar: 'شروط الدفع: 30 يوم',
+        tax_total: 50.0,
+        total: 1050.0,
+        total_paid: 0.0,
+        balance_due: 1050.0,
+        notes: 'Thank you for your business',
+        created_by: userIds[0],
+        updated_by: userIds[0],
       },
       {
         company_id: companyIds[1],
-        customer_name: 'Saudi Aramco Services',
-        customer_email: 'procurement@aramco.sa',
-        customer_phone: '+966503333333',
-        customer_address: 'Dhahran, Eastern Province',
-        customer_trn: '300000000000004',
-        invoice_number: 'INV-001',
-        invoice_date: '2024-01-15',
+        customer_id: customerIds[2],
+        number: 'KSA-INV-001',
+        issue_date: '2024-01-15',
         due_date: '2024-02-14',
         status: 'Paid',
+        currency: 'SAR',
         subtotal: 2000.0,
-        vat_amount: 300.0,
-        total_amount: 2300.0,
-        vat_rate: 15,
-        notes_en: 'Paid in full',
-        notes_ar: 'تم الدفع بالكامل',
-      },
-      {
-        company_id: companyIds[1],
-        customer_name: 'Riyadh Construction Co.',
-        customer_email: 'projects@riyadhconstruction.sa',
-        customer_phone: '+966504444444',
-        customer_address: 'King Abdulaziz Road, Riyadh',
-        customer_trn: '300000000000005',
-        invoice_number: 'INV-002',
-        invoice_date: '2024-01-16',
-        due_date: '2024-02-15',
-        status: 'Sent',
-        subtotal: 1500.0,
-        vat_amount: 225.0,
-        total_amount: 1725.0,
-        vat_rate: 15,
-        notes_en: 'Construction materials supply',
-        notes_ar: 'توريد مواد البناء',
+        tax_total: 300.0,
+        total: 2300.0,
+        total_paid: 2300.0,
+        balance_due: 0.0,
+        notes: 'Paid in full',
+        created_by: userIds[2],
+        updated_by: userIds[2],
       },
     ];
 
     const invoiceIds: string[] = [];
     for (const invoice of invoices) {
-      // Check if invoice already exists
       const existing = await queryRunner.query(
-        `
-        SELECT id FROM invoices WHERE invoice_number = $1 LIMIT 1
-      `,
-        [invoice.invoice_number],
+        `SELECT id FROM invoices WHERE number = $1 LIMIT 1`,
+        [invoice.number],
       );
-
+      
       if (existing.length > 0) {
         invoiceIds.push(existing[0].id);
       } else {
         const result = await queryRunner.query(
           `
-          INSERT INTO invoices (company_id, customer_name, customer_email, customer_phone, customer_address, customer_trn, invoice_number, invoice_date, due_date, status, subtotal_amount, tax_amount, total_amount, vat_amount, vat_rate, notes_en, notes_ar)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+          INSERT INTO invoices (company_id, customer_id, number, issue_date, due_date, status, currency, subtotal, tax_total, total, total_paid, balance_due, notes, created_by, updated_by)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $14)
           RETURNING id
         `,
           [
             invoice.company_id,
-            invoice.customer_name,
-            invoice.customer_email,
-            invoice.customer_phone,
-            invoice.customer_address,
-            invoice.customer_trn,
-            invoice.invoice_number,
-            invoice.invoice_date,
+            invoice.customer_id,
+            invoice.number,
+            invoice.issue_date,
             invoice.due_date,
             invoice.status,
+            invoice.currency,
             invoice.subtotal,
-            invoice.vat_amount,
-            invoice.total_amount,
-            invoice.vat_amount,
-            invoice.vat_rate,
-            invoice.notes_en,
-            invoice.notes_ar,
+            invoice.tax_total,
+            invoice.total,
+            invoice.total_paid,
+            invoice.balance_due,
+            invoice.notes,
+            invoice.created_by,
           ],
         );
         invoiceIds.push(result[0].id);
       }
     }
 
-    // 12. Insert Sample Invoice Items
-    const invoiceItems = [
+    // 12. Insert Sample Invoice Lines
+    const invoiceLines = [
       {
         invoice_id: invoiceIds[0],
         item_id: itemIds[0],
-        description_en: 'Steel Rebar 12mm',
+        description: 'Steel Rebar 12mm',
         description_ar: 'حديد التسليح 12 مم',
         quantity: 20,
         unit_price: 25.5,
-        tax_rate: 5,
-        tax_amount: 25.5,
-        line_total: 535.5,
+        discount_amount: 10.0,
+        tax_rate_percent: 5.0,
+        line_subtotal: 500.0,
+        tax_amount: 25.0,
+        line_total: 525.0,
       },
       {
-        invoice_id: invoiceIds[0],
+        invoice_id: invoiceIds[1],
         item_id: itemIds[1],
-        description_en: 'Portland Cement 50kg',
-        description_ar: 'أسمنت بورتلاند 50 كيلو',
-        quantity: 25,
-        unit_price: 18.75,
-        tax_rate: 5,
-        tax_amount: 23.44,
-        line_total: 492.19,
-      },
-      {
-        invoice_id: invoiceIds[2],
-        item_id: itemIds[2],
-        description_en: 'Motor Oil 5W-30',
+        description: 'Motor Oil 5W-30',
         description_ar: 'زيت محرك 5W-30',
         quantity: 30,
         unit_price: 45.0,
-        tax_rate: 15,
-        tax_amount: 202.5,
-        line_total: 1552.5,
-      },
-      {
-        invoice_id: invoiceIds[2],
-        item_id: itemIds[3],
-        description_en: 'Air Filter Premium',
-        description_ar: 'فلتر هواء ممتاز',
-        quantity: 15,
-        unit_price: 28.5,
-        tax_rate: 15,
-        tax_amount: 64.13,
-        line_total: 491.63,
+        discount_amount: 50.0,
+        tax_rate_percent: 15.0,
+        line_subtotal: 1300.0,
+        tax_amount: 195.0,
+        line_total: 1495.0,
       },
     ];
 
-    for (const item of invoiceItems) {
+    for (const line of invoiceLines) {
       await queryRunner.query(
         `
-        INSERT INTO invoice_items (invoice_id, item_id, description_en, description_ar, quantity, unit_price, tax_rate, tax_amount, line_total)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        INSERT INTO invoice_lines (invoice_id, item_id, description, description_ar, quantity, unit_price, discount_amount, tax_rate_percent, line_subtotal, tax_amount, line_total)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       `,
         [
-          item.invoice_id,
-          item.item_id,
-          item.description_en,
-          item.description_ar,
-          item.quantity,
-          item.unit_price,
-          item.tax_rate,
-          item.tax_amount,
-          item.line_total,
+          line.invoice_id,
+          line.item_id,
+          line.description,
+          line.description_ar,
+          line.quantity,
+          line.unit_price,
+          line.discount_amount,
+          line.tax_rate_percent,
+          line.line_subtotal,
+          line.tax_amount,
+          line.line_total,
         ],
       );
     }
@@ -803,42 +678,34 @@ export class SeedInitialData1703040000000 implements MigrationInterface {
     // 13. Insert Sample Payments
     const payments = [
       {
-        company_id: companyIds[0],
-        invoice_id: invoiceIds[0],
-        payment_date: '2024-01-20',
-        amount: 1050.0,
-        payment_method: 'bank',
-        reference_number: 'TXN-001-2024',
-        notes: 'Bank transfer received',
-        created_by: userIds[0],
-      },
-      {
         company_id: companyIds[1],
-        invoice_id: invoiceIds[2],
-        payment_date: '2024-01-18',
+        invoice_id: invoiceIds[1],
+        received_on: '2024-01-18',
         amount: 2300.0,
-        payment_method: 'bank',
-        reference_number: 'TXN-002-2024',
+        method: 'bank',
+        reference: 'TXN-002-2024',
         notes: 'Full payment received via bank transfer',
         created_by: userIds[2],
+        updated_by: userIds[2],
       },
     ];
 
     for (const payment of payments) {
       await queryRunner.query(
         `
-        INSERT INTO payments (company_id, invoice_id, payment_date, amount, payment_method, reference_number, notes, created_by)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        INSERT INTO payments (company_id, invoice_id, received_on, amount, method, reference, notes, created_by, updated_by)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       `,
         [
           payment.company_id,
           payment.invoice_id,
-          payment.payment_date,
+          payment.received_on,
           payment.amount,
-          payment.payment_method,
-          payment.reference_number,
+          payment.method,
+          payment.reference,
           payment.notes,
           payment.created_by,
+          payment.updated_by,
         ],
       );
     }
@@ -848,7 +715,7 @@ export class SeedInitialData1703040000000 implements MigrationInterface {
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query('DELETE FROM payments');
-    await queryRunner.query('DELETE FROM invoice_items');
+    await queryRunner.query('DELETE FROM invoice_lines');
     await queryRunner.query('DELETE FROM invoices');
     await queryRunner.query('DELETE FROM items');
     await queryRunner.query('DELETE FROM customers');
